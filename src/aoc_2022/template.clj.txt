@@ -1,0 +1,15 @@
+(ns aoc-2022.day<DAY>
+  (:require [aoc-2022.core :refer [lines]]))
+
+(def input
+  (->> "day<DAY>.txt"
+       lines))
+
+(def part1 nil)
+
+(def part2 nil)
+
+(defn -main
+  []
+  (println part1)
+  (println part2))
