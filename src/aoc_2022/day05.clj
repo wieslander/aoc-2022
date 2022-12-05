@@ -16,7 +16,8 @@
   (let [item-pos (inc (* stack-index 4))]
     (when (> (count line) item-pos)
       (let [item (nth line item-pos)]
-        (when (and (>= (int item) (int \A)) (<= (int item) (int \Z)))
+        (when (and (>= (int item) (int \A))
+                   (<= (int item) (int \Z)))
           item)))))
 
 (defn parse-items
@@ -34,13 +35,12 @@
   [lines stack-count]
   (let [initial-stacks (vec (take stack-count (repeatedly list)))
         stack-lines (take-while #(not (nil? (str/index-of % "["))) lines)]
-    (loop [lines (reverse stack-lines)
+    (loop [[line & remaining-lines] (reverse stack-lines)
            stacks initial-stacks]
-      (if (empty? lines)
+      (if (nil? line)
         stacks
-        (let [line (first lines)
-              items (parse-items line stack-count)]
-          (recur (rest lines) (mapv push-item stacks items)))))))
+        (let [items (parse-items line stack-count)]
+          (recur remaining-lines (mapv push-item stacks items)))))))
 
 (defn parse-instruction
   [line]
@@ -71,41 +71,36 @@
   [stacks instruction reverse?]
   (if (zero? (:item-count instruction))
     stacks
-    (let [{source-index :source
-           dest-index :dest
-           item-count :item-count} instruction
-          source-stack (get stacks (dec source-index))
-          dest-stack (get stacks (dec dest-index))
+    (let [{:keys [source, dest, item-count]} instruction
+          source-index (dec source)
+          dest-index (dec dest)
+          source-stack (get stacks source-index)
+          dest-stack (get stacks dest-index)
           items (take item-count source-stack)
           ordered-items (if reverse? (reverse items) items)
           remaining (drop item-count source-stack)]
       (assoc stacks
-             (dec source-index) remaining
-             (dec dest-index) (concat ordered-items dest-stack)))))
+             source-index remaining
+             dest-index (concat ordered-items dest-stack)))))
 
 (defn move-items
-  [stacks [instruction & remaining-instructions]]
+  [stacks [instruction & remaining-instructions] reverse?]
   (if (nil? instruction)
     stacks
-    (recur (move stacks instruction true) remaining-instructions)))
+    (recur (move stacks instruction reverse?)
+           remaining-instructions
+           reverse?)))
 
-(defn move-items-ordered
-  [stacks [instruction & remaining-instructions]]
-  (if (nil? instruction)
-    stacks
-    (recur (move stacks instruction false) remaining-instructions)))
-
-(def part1
-  (->> (move-items (:stacks input) (:instructions input))
+(defn solve
+  [& {:keys [reverse?]}]
+  (->> (move-items (:stacks input) (:instructions input) reverse?)
        (map first)
        (filter #(not (nil? %)))
        (apply str)))
 
-(def part2
-  (->> (move-items-ordered (:stacks input) (:instructions input))
-       (map first)
-       (filter #(not (nil? %)))
-       (apply str)))
+(def part1 (solve {:reverse? true}))
+
+(def part2 (solve {:reverse? false}))
 
 (defn -main
   []
