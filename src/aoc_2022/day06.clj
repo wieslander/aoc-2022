@@ -6,16 +6,19 @@
        resource
        slurp))
 
-(defn start-of-packet-marker?
+(defn marker?
   [s]
   (= (count (set s))
      (count s)))
 
 (defn find-marker-end
   [input marker-length]
-  (if (start-of-packet-marker? (take marker-length input))
-    marker-length
-    (inc (find-marker-end (rest input) marker-length))))
+  (let [windows (partition marker-length 1 input)]
+    (loop [[window & remaining-windows] windows
+           offset 0]
+      (if (marker? window)
+        (+ marker-length offset)
+        (recur remaining-windows (inc offset))))))
 
 (def part1 (find-marker-end input 4))
 
